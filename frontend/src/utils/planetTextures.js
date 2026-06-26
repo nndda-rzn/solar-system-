@@ -1,514 +1,389 @@
-// Generate procedural planet textures using Canvas
-// Tidak perlu download file external!
+// Generate realistic procedural planet textures using Canvas
+// Multi-octave noise for natural-looking surfaces
 
-export const generatePlanetTexture = (planetName) => {
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 256;
-  const ctx = canvas.getContext('2d');
-
-  switch (planetName.toLowerCase()) {
-    case 'mercury':
-      drawMercury(ctx, canvas.width, canvas.height);
-      break;
-    case 'venus':
-      drawVenus(ctx, canvas.width, canvas.height);
-      break;
-    case 'earth':
-      drawEarth(ctx, canvas.width, canvas.height);
-      break;
-    case 'mars':
-      drawMars(ctx, canvas.width, canvas.height);
-      break;
-    case 'jupiter':
-      drawJupiter(ctx, canvas.width, canvas.height);
-      break;
-    case 'saturn':
-      drawSaturn(ctx, canvas.width, canvas.height);
-      break;
-    case 'uranus':
-      drawUranus(ctx, canvas.width, canvas.height);
-      break;
-    case 'neptune':
-      drawNeptune(ctx, canvas.width, canvas.height);
-      break;
-    case 'sun':
-      drawSun(ctx, canvas.width, canvas.height);
-      break;
-    case 'moon':
-      drawMoon(ctx, canvas.width, canvas.height);
-      break;
-    default:
-      drawDefault(ctx, canvas.width, canvas.height);
-  }
-
-  return canvas;
-};
-
-// Helper: Noise function for natural patterns
-const noise = (x, y, seed = 0) => {
-  const n = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453;
+function seedRandom(x, y) {
+  const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
   return n - Math.floor(n);
-};
+}
 
-// Helper: Smooth noise
-const smoothNoise = (x, y, scale = 1) => {
-  const nx = x / scale;
-  const ny = y / scale;
-  const ix = Math.floor(nx);
-  const iy = Math.floor(ny);
-  const fx = nx - ix;
-  const fy = ny - iy;
-  
-  const a = noise(ix, iy);
-  const b = noise(ix + 1, iy);
-  const c = noise(ix, iy + 1);
-  const d = noise(ix + 1, iy + 1);
-  
-  const ux = fx * fx * (3 - 2 * fx);
-  const uy = fy * fy * (3 - 2 * fy);
-  
-  return a * (1 - ux) * (1 - uy) + b * ux * (1 - uy) + c * (1 - ux) * uy + d * ux * uy;
-};
+function lerp(a, b, t) { return a + (b - a) * t; }
 
-// Helper: Draw craters
-const drawCraters = (ctx, w, h, count, color1, color2) => {
+function smoothNoise(x, y, scale) {
+  const nx = x / scale, ny = y / scale;
+  const ix = Math.floor(nx), iy = Math.floor(ny);
+  const fx = nx - ix, fy = ny - iy;
+  const sx = fx * fx * (3 - 2 * fx);
+  const sy = fy * fy * (3 - 2 * fy);
+  const a = seedRandom(ix, iy);
+  const b = seedRandom(ix + 1, iy);
+  const c = seedRandom(ix, iy + 1);
+  const d = seedRandom(ix + 1, iy + 1);
+  return lerp(lerp(a, b, sx), lerp(c, d, sx), sy);
+}
+
+function fbm(x, y, octaves, lacunarity, gain) {
+  let value = 0, amplitude = 1, frequency = 1, maxValue = 0;
+  for (let i = 0; i < octaves; i++) {
+    value += amplitude * smoothNoise(x * frequency, y * frequency, 1);
+    maxValue += amplitude;
+    amplitude *= gain;
+    frequency *= lacunarity;
+  }
+  return value / maxValue;
+}
+
+function drawCraters(ctx, w, h, count, darkColor, lightColor) {
   for (let i = 0; i < count; i++) {
-    const x = Math.random() * w;
-    const y = Math.random() * h;
-    const r = 2 + Math.random() * 8;
-    
-    const gradient = ctx.createRadialGradient(x, y, 0, x, y, r);
-    gradient.addColorStop(0, color1);
-    gradient.addColorStop(0.7, color2);
-    gradient.addColorStop(1, 'transparent');
-    
-    ctx.fillStyle = gradient;
+    const x = Math.random() * w, y = Math.random() * h;
+    const r = 2 + Math.random() * 10;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, darkColor);
+    g.addColorStop(0.6, lightColor);
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
   }
-};
+}
 
-// Mercury - Gray, cratered
-const drawMercury = (ctx, w, h) => {
-  // Base color
-  const gradient = ctx.createLinearGradient(0, 0, w, h);
-  gradient.addColorStop(0, '#8c7e6d');
-  gradient.addColorStop(0.5, '#a09080');
-  gradient.addColorStop(1, '#7a6e5d');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, w, h);
-  
-  // Add noise texture
+// Mercury - realistic gray with heavy cratering
+function drawMercury(ctx, w, h) {
   for (let x = 0; x < w; x += 2) {
     for (let y = 0; y < h; y += 2) {
-      const n = smoothNoise(x, y, 20);
-      ctx.fillStyle = `rgba(0,0,0,${n * 0.2})`;
+      const n = fbm(x, y, 5, 2.0, 0.5);
+      const r = Math.floor(lerp(120, 170, n));
+      const g = Math.floor(lerp(110, 155, n));
+      const b = Math.floor(lerp(100, 140, n));
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
       ctx.fillRect(x, y, 2, 2);
     }
   }
-  
-  // Craters
-  drawCraters(ctx, w, h, 30, 'rgba(60,50,40,0.5)', 'rgba(80,70,60,0.3)');
-};
+  drawCraters(ctx, w, h, 80, 'rgba(40,35,30,0.5)', 'rgba(140,130,120,0.3)');
+  drawCraters(ctx, w, h, 40, 'rgba(30,25,20,0.6)', 'rgba(120,110,100,0.2)');
+}
 
-// Venus - Yellowish with clouds
-const drawVenus = (ctx, w, h) => {
-  // Base color
-  const gradient = ctx.createLinearGradient(0, 0, w, h);
-  gradient.addColorStop(0, '#e6c229');
-  gradient.addColorStop(0.5, '#d4a820');
-  gradient.addColorStop(1, '#c9a025');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, w, h);
-  
-  // Cloud patterns
-  for (let i = 0; i < 50; i++) {
-    const x = Math.random() * w;
-    const y = Math.random() * h;
-    const width = 20 + Math.random() * 60;
-    const height = 5 + Math.random() * 15;
-    
-    ctx.fillStyle = `rgba(255,220,100,${0.1 + Math.random() * 0.2})`;
-    ctx.beginPath();
-    ctx.ellipse(x, y, width, height, Math.random() * Math.PI, 0, Math.PI * 2);
-    ctx.fill();
-  }
-};
-
-// Earth - Blue with green/brown land
-const drawEarth = (ctx, w, h) => {
-  // Ocean base
-  const gradient = ctx.createLinearGradient(0, 0, 0, h);
-  gradient.addColorStop(0, '#1a4a7a');
-  gradient.addColorStop(0.3, '#2060a0');
-  gradient.addColorStop(0.5, '#1a5090');
-  gradient.addColorStop(0.7, '#2060a0');
-  gradient.addColorStop(1, '#1a4a7a');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, w, h);
-  
-  // Add ocean waves
-  for (let x = 0; x < w; x += 3) {
-    for (let y = 0; y < h; y += 3) {
-      const n = smoothNoise(x, y, 30);
-      ctx.fillStyle = `rgba(30,80,140,${n * 0.3})`;
-      ctx.fillRect(x, y, 3, 3);
+// Venus - thick yellowish atmosphere
+function drawVenus(ctx, w, h) {
+  for (let x = 0; x < w; x += 2) {
+    for (let y = 0; y < h; y += 2) {
+      const n = fbm(x, y, 4, 3.0, 0.6);
+      const r = Math.floor(lerp(220, 245, n));
+      const g = Math.floor(lerp(190, 220, n));
+      const b = Math.floor(lerp(100, 140, n));
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(x, y, 2, 2);
     }
   }
-  
-  // Land masses (simplified continents)
-  const drawLand = (cx, cy, size) => {
-    ctx.fillStyle = '#2d5a1e';
+  for (let i = 0; i < 60; i++) {
+    const x = Math.random() * w, y = Math.random() * h;
+    const rw = 30 + Math.random() * 80, rh = 5 + Math.random() * 15;
+    ctx.fillStyle = `rgba(255,240,200,${0.05 + Math.random() * 0.15})`;
     ctx.beginPath();
-    for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2;
-      const r = size * (0.7 + Math.random() * 0.6);
-      const x = cx + Math.cos(angle) * r;
-      const y = cy + Math.sin(angle) * r;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+    ctx.ellipse(x, y, rw, rh, Math.random() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// Earth - NOT procedural, use real texture file
+// (handled by textureLoader.js)
+
+// Mars - realistic red with polar caps and dark regions
+function drawMars(ctx, w, h) {
+  for (let x = 0; x < w; x += 2) {
+    for (let y = 0; y < h; y += 2) {
+      const n = fbm(x, y, 5, 2.5, 0.5);
+      const r = Math.floor(lerp(180, 220, n));
+      const g = Math.floor(lerp(60, 100, n));
+      const b = Math.floor(lerp(20, 50, n));
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(x, y, 2, 2);
+    }
+  }
+  // Dark regions (Syrtis Major, etc.)
+  for (let i = 0; i < 3; i++) {
+    const cx = Math.random() * w, cy = Math.random() * h;
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 60 + Math.random() * 40);
+    g.addColorStop(0, 'rgba(60,20,5,0.4)');
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 60 + Math.random() * 40, 30 + Math.random() * 20, Math.random(), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Polar caps
+  const capGrad = ctx.createLinearGradient(0, 0, 0, h * 0.15);
+  capGrad.addColorStop(0, 'rgba(255,255,250,0.8)');
+  capGrad.addColorStop(0.5, 'rgba(240,235,230,0.3)');
+  capGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = capGrad;
+  ctx.fillRect(0, 0, w, h * 0.15);
+  const capGrad2 = ctx.createLinearGradient(0, h, 0, h * 0.85);
+  capGrad2.addColorStop(0, 'rgba(255,255,250,0.7)');
+  capGrad2.addColorStop(0.5, 'rgba(240,235,230,0.2)');
+  capGrad2.addColorStop(1, 'transparent');
+  ctx.fillStyle = capGrad2;
+  ctx.fillRect(0, h * 0.85, w, h * 0.15);
+}
+
+// Jupiter - detailed gas bands with Great Red Spot
+function drawJupiter(ctx, w, h) {
+  // Base
+  for (let x = 0; x < w; x += 2) {
+    for (let y = 0; y < h; y += 2) {
+      const n = fbm(x, y, 4, 3.0, 0.5);
+      const r = Math.floor(lerp(180, 220, n));
+      const g = Math.floor(lerp(150, 190, n));
+      const b = Math.floor(lerp(100, 140, n));
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(x, y, 2, 2);
+    }
+  }
+  // Turbulent bands
+  const bands = [
+    { y: 0.05, h: 0.04, r: 160, g: 110, b: 60, a: 0.7 },
+    { y: 0.12, h: 0.06, r: 210, g: 170, b: 110, a: 0.5 },
+    { y: 0.22, h: 0.05, r: 140, g: 90, b: 40, a: 0.8 },
+    { y: 0.30, h: 0.07, r: 200, g: 160, b: 100, a: 0.4 },
+    { y: 0.40, h: 0.04, r: 150, g: 100, b: 50, a: 0.7 },
+    { y: 0.48, h: 0.06, r: 220, g: 180, b: 120, a: 0.5 },
+    { y: 0.58, h: 0.05, r: 140, g: 90, b: 40, a: 0.8 },
+    { y: 0.68, h: 0.06, r: 210, g: 170, b: 110, a: 0.4 },
+    { y: 0.78, h: 0.04, r: 160, g: 110, b: 60, a: 0.6 },
+    { y: 0.88, h: 0.05, r: 200, g: 160, b: 100, a: 0.5 },
+  ];
+  bands.forEach(b => {
+    ctx.fillStyle = `rgba(${b.r},${b.g},${b.b},${b.a})`;
+    ctx.beginPath();
+    ctx.moveTo(0, h * b.y);
+    for (let x = 0; x <= w; x += 3) {
+      const wave = Math.sin(x * 0.02) * 4 + Math.sin(x * 0.007) * 3;
+      ctx.lineTo(x, h * b.y + wave);
+    }
+    for (let x = w; x >= 0; x -= 3) {
+      const wave = Math.sin(x * 0.02) * 4 + Math.sin(x * 0.007) * 3;
+      ctx.lineTo(x, h * (b.y + b.h) + wave);
     }
     ctx.closePath();
     ctx.fill();
-    
-    // Add some brown/desert areas
-    ctx.fillStyle = '#8a7a40';
+  });
+  // Great Red Spot
+  const sx = w * 0.62, sy = h * 0.42;
+  for (let i = 0; i < 6; i++) {
+    const r = 35 - i * 4;
+    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
+    const a = 0.35 - i * 0.05;
+    g.addColorStop(0, `rgba(210,70,30,${a})`);
+    g.addColorStop(0.5, `rgba(180,50,20,${a * 0.7})`);
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.arc(cx + size * 0.2, cy, size * 0.3, 0, Math.PI * 2);
-    ctx.fill();
-  };
-  
-  drawLand(w * 0.15, h * 0.4, 30);  // Americas
-  drawLand(w * 0.45, h * 0.35, 40); // Africa/Europe
-  drawLand(w * 0.75, h * 0.45, 35); // Asia
-  drawLand(w * 0.85, h * 0.7, 20);  // Australia
-  
-  // Ice caps
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, w, 15);
-  ctx.fillRect(0, h - 15, w, 15);
-  
-  // Clouds
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  for (let i = 0; i < 30; i++) {
-    const x = Math.random() * w;
-    const y = Math.random() * h;
-    ctx.beginPath();
-    ctx.ellipse(x, y, 15 + Math.random() * 25, 5 + Math.random() * 10, Math.random() * Math.PI, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy, r, r * 0.55, 0.1, 0, Math.PI * 2);
     ctx.fill();
   }
-};
+  ctx.fillStyle = 'rgba(200,50,20,0.8)';
+  ctx.beginPath();
+  ctx.ellipse(sx, sy, 14, 8, 0.1, 0, Math.PI * 2);
+  ctx.fill();
+  // Small storms
+  [[0.25, 0.3, 8], [0.48, 0.72, 7], [0.78, 0.22, 9]].forEach(([sx, sy, sz]) => {
+    const g = ctx.createRadialGradient(w * sx, h * sy, 0, w * sx, h * sy, sz);
+    g.addColorStop(0, 'rgba(200,90,50,0.4)');
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(w * sx, h * sy, sz, sz * 0.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
 
-// Mars - Red with dark patches
-const drawMars = (ctx, w, h) => {
-  // Base red color
-  const gradient = ctx.createLinearGradient(0, 0, w, h);
-  gradient.addColorStop(0, '#c1440e');
-  gradient.addColorStop(0.5, '#d45520');
-  gradient.addColorStop(1, '#b03a0a');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, w, h);
-  
-  // Add texture
+// Saturn - golden bands with subtle detail
+function drawSaturn(ctx, w, h) {
   for (let x = 0; x < w; x += 2) {
     for (let y = 0; y < h; y += 2) {
-      const n = smoothNoise(x, y, 25);
-      ctx.fillStyle = `rgba(0,0,0,${n * 0.25})`;
+      const n = fbm(x, y, 4, 3.0, 0.5);
+      const r = Math.floor(lerp(220, 245, n));
+      const g = Math.floor(lerp(190, 220, n));
+      const b = Math.floor(lerp(140, 175, n));
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
       ctx.fillRect(x, y, 2, 2);
     }
   }
-  
-  // Dark patches (maria)
-  ctx.fillStyle = 'rgba(80,30,10,0.4)';
-  ctx.beginPath();
-  ctx.ellipse(w * 0.3, h * 0.4, 60, 40, 0.3, 0, Math.PI * 2);
-  ctx.fill();
-  
-  ctx.beginPath();
-  ctx.ellipse(w * 0.7, h * 0.6, 50, 35, -0.2, 0, Math.PI * 2);
-  ctx.fill();
-  
-  // Polar ice caps
-  ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.fillRect(0, 0, w, 20);
-  ctx.fillRect(0, h - 25, w, 25);
-};
-
-// Jupiter - Gas bands (improved)
-const drawJupiter = (ctx, w, h) => {
-  // Base color
-  ctx.fillStyle = '#d8ca9d';
-  ctx.fillRect(0, 0, w, h);
-  
-  // Add noise texture first
-  for (let x = 0; x < w; x += 2) {
-    for (let y = 0; y < h; y += 2) {
-      const n = smoothNoise(x, y, 15);
-      ctx.fillStyle = `rgba(180,150,100,${n * 0.3})`;
-      ctx.fillRect(x, y, 2, 2);
-    }
-  }
-  
-  // Detailed gas bands with varying widths
   const bands = [
-    { y: 0.08, color: '#a07040', height: 0.04, wavy: true },
-    { y: 0.15, color: '#c8a060', height: 0.06, wavy: false },
-    { y: 0.25, color: '#8b6030', height: 0.05, wavy: true },
-    { y: 0.33, color: '#d4b878', height: 0.08, wavy: false },
-    { y: 0.45, color: '#a07040', height: 0.04, wavy: true },
-    { y: 0.52, color: '#c8a060', height: 0.07, wavy: false },
-    { y: 0.62, color: '#8b6030', height: 0.05, wavy: true },
-    { y: 0.72, color: '#d4b878', height: 0.06, wavy: false },
-    { y: 0.82, color: '#a07040', height: 0.04, wavy: true },
-    { y: 0.9, color: '#c8a060', height: 0.05, wavy: false }
+    { y: 0.08, h: 0.04, r: 200, g: 170, b: 120, a: 0.5 },
+    { y: 0.18, h: 0.03, r: 180, g: 150, b: 100, a: 0.4 },
+    { y: 0.28, h: 0.05, r: 210, g: 180, b: 130, a: 0.5 },
+    { y: 0.40, h: 0.03, r: 190, g: 160, b: 110, a: 0.4 },
+    { y: 0.52, h: 0.04, r: 200, g: 170, b: 120, a: 0.5 },
+    { y: 0.65, h: 0.03, r: 180, g: 150, b: 100, a: 0.4 },
+    { y: 0.78, h: 0.04, r: 210, g: 180, b: 130, a: 0.5 },
+    { y: 0.90, h: 0.03, r: 190, g: 160, b: 110, a: 0.4 },
   ];
-  
-  bands.forEach(band => {
-    ctx.fillStyle = band.color;
-    
-    if (band.wavy) {
-      // Draw wavy band
-      ctx.beginPath();
-      ctx.moveTo(0, h * band.y);
-      for (let x = 0; x <= w; x += 5) {
-        const wave = Math.sin(x * 0.03) * 3 + Math.sin(x * 0.01) * 2;
-        ctx.lineTo(x, h * band.y + wave);
-      }
-      for (let x = w; x >= 0; x -= 5) {
-        const wave = Math.sin(x * 0.03) * 3 + Math.sin(x * 0.01) * 2;
-        ctx.lineTo(x, h * (band.y + band.height) + wave);
-      }
-      ctx.closePath();
-      ctx.fill();
-    } else {
-      ctx.fillRect(0, h * band.y, w, h * band.height);
-    }
+  bands.forEach(b => {
+    ctx.fillStyle = `rgba(${b.r},${b.g},${b.b},${b.a})`;
+    ctx.fillRect(0, h * b.y, w, h * b.h);
   });
-  
-  // Great Red Spot (larger and more detailed)
-  const spotX = w * 0.62;
-  const spotY = h * 0.42;
-  
-  // Outer swirl
-  for (let i = 0; i < 5; i++) {
-    const r = 30 - i * 4;
-    const spotGradient = ctx.createRadialGradient(spotX, spotY, 0, spotX, spotY, r);
-    const alpha = 0.3 - i * 0.05;
-    spotGradient.addColorStop(0, `rgba(200,60,30,${alpha})`);
-    spotGradient.addColorStop(0.6, `rgba(180,50,25,${alpha * 0.6})`);
-    spotGradient.addColorStop(1, 'transparent');
-    ctx.fillStyle = spotGradient;
-    ctx.beginPath();
-    ctx.ellipse(spotX, spotY, r, r * 0.6, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  
-  // Inner spot
-  ctx.fillStyle = '#c44020';
-  ctx.beginPath();
-  ctx.ellipse(spotX, spotY, 15, 10, 0, 0, Math.PI * 2);
-  ctx.fill();
-  
-  // Small storm swirls
-  const storms = [
-    { x: 0.25, y: 0.3, size: 8 },
-    { x: 0.45, y: 0.7, size: 6 },
-    { x: 0.8, y: 0.25, size: 7 }
-  ];
-  
-  storms.forEach(storm => {
-    const stormGradient = ctx.createRadialGradient(
-      w * storm.x, h * storm.y, 0,
-      w * storm.x, h * storm.y, storm.size
-    );
-    stormGradient.addColorStop(0, 'rgba(200,100,60,0.4)');
-    stormGradient.addColorStop(1, 'transparent');
-    ctx.fillStyle = stormGradient;
-    ctx.beginPath();
-    ctx.ellipse(w * storm.x, h * storm.y, storm.size, storm.size * 0.6, 0, 0, Math.PI * 2);
-    ctx.fill();
-  });
-};
-
-// Saturn - Golden with detailed bands (improved)
-const drawSaturn = (ctx, w, h) => {
-  // Base golden color with gradient
-  const gradient = ctx.createLinearGradient(0, 0, 0, h);
-  gradient.addColorStop(0, '#e8d0a0');
-  gradient.addColorStop(0.2, '#f0d8b0');
-  gradient.addColorStop(0.5, '#e0c898');
-  gradient.addColorStop(0.8, '#f0d8b0');
-  gradient.addColorStop(1, '#e8d0a0');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, w, h);
-  
-  // Add subtle noise texture
-  for (let x = 0; x < w; x += 2) {
-    for (let y = 0; y < h; y += 2) {
-      const n = smoothNoise(x, y, 20);
-      ctx.fillStyle = `rgba(180,150,100,${n * 0.15})`;
-      ctx.fillRect(x, y, 2, 2);
-    }
-  }
-  
-  // Detailed gas bands
-  const bands = [
-    { y: 0.1, color: '#d4b880', height: 0.04, opacity: 0.6 },
-    { y: 0.2, color: '#c8a870', height: 0.03, opacity: 0.5 },
-    { y: 0.3, color: '#dcc090', height: 0.05, opacity: 0.7 },
-    { y: 0.4, color: '#c0a060', height: 0.04, opacity: 0.5 },
-    { y: 0.5, color: '#d8bc88', height: 0.06, opacity: 0.6 },
-    { y: 0.6, color: '#c8a870', height: 0.03, opacity: 0.5 },
-    { y: 0.7, color: '#dcc090', height: 0.04, opacity: 0.6 },
-    { y: 0.8, color: '#c0a060', height: 0.03, opacity: 0.5 },
-    { y: 0.9, color: '#d4b880', height: 0.04, opacity: 0.6 }
-  ];
-  
-  bands.forEach(band => {
-    ctx.fillStyle = band.color;
-    ctx.globalAlpha = band.opacity;
-    ctx.fillRect(0, h * band.y, w, h * band.height);
-  });
-  ctx.globalAlpha = 1;
-  
-  // Hexagonal storm at north pole (subtle)
-  const hexX = w * 0.5;
-  const hexY = h * 0.08;
-  ctx.strokeStyle = 'rgba(180,150,100,0.4)';
+  // Hexagon at north pole
+  ctx.strokeStyle = 'rgba(180,150,100,0.3)';
   ctx.lineWidth = 1;
   ctx.beginPath();
+  const hx = w * 0.5, hy = h * 0.06;
   for (let i = 0; i < 6; i++) {
-    const angle = (i / 6) * Math.PI * 2 - Math.PI / 2;
-    const x = hexX + Math.cos(angle) * 12;
-    const y = hexY + Math.sin(angle) * 8;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+    const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+    const x = hx + Math.cos(a) * 10, y = hy + Math.sin(a) * 7;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   }
   ctx.closePath();
   ctx.stroke();
-};
+}
 
-// Uranus - Cyan/blue-green
-const drawUranus = (ctx, w, h) => {
-  const gradient = ctx.createLinearGradient(0, 0, w, h);
-  gradient.addColorStop(0, '#d1e7e7');
-  gradient.addColorStop(0.5, '#b8d8d8');
-  gradient.addColorStop(1, '#d1e7e7');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, w, h);
-  
-  // Subtle clouds
-  for (let i = 0; i < 20; i++) {
-    ctx.fillStyle = `rgba(255,255,255,${0.1 + Math.random() * 0.15})`;
-    ctx.beginPath();
-    ctx.ellipse(
-      Math.random() * w,
-      Math.random() * h,
-      20 + Math.random() * 40,
-      5 + Math.random() * 10,
-      Math.random() * Math.PI,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-  }
-};
-
-// Neptune - Deep blue
-const drawNeptune = (ctx, w, h) => {
-  const gradient = ctx.createLinearGradient(0, 0, w, h);
-  gradient.addColorStop(0, '#5b5ddf');
-  gradient.addColorStop(0.5, '#4040c0');
-  gradient.addColorStop(1, '#5b5ddf');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, w, h);
-  
-  // Cloud bands
-  ctx.fillStyle = 'rgba(100,100,220,0.3)';
-  ctx.fillRect(0, h * 0.3, w, h * 0.05);
-  ctx.fillRect(0, h * 0.55, w, h * 0.04);
-  ctx.fillRect(0, h * 0.75, w, h * 0.05);
-  
-  // Dark spot
-  const spotGradient = ctx.createRadialGradient(w * 0.4, h * 0.4, 0, w * 0.4, h * 0.4, 20);
-  spotGradient.addColorStop(0, '#3030a0');
-  spotGradient.addColorStop(1, 'transparent');
-  ctx.fillStyle = spotGradient;
-  ctx.beginPath();
-  ctx.ellipse(w * 0.4, h * 0.4, 20, 12, 0, 0, Math.PI * 2);
-  ctx.fill();
-};
-
-// Sun - Bright yellow/orange with flares
-const drawSun = (ctx, w, h) => {
-  // Base gradient
-  const gradient = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, w/2);
-  gradient.addColorStop(0, '#ffff80');
-  gradient.addColorStop(0.3, '#ffcc00');
-  gradient.addColorStop(0.6, '#ff9900');
-  gradient.addColorStop(1, '#ff6600');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, w, h);
-  
-  // Solar flares
-  for (let i = 0; i < 40; i++) {
-    const x = Math.random() * w;
-    const y = Math.random() * h;
-    const r = 10 + Math.random() * 30;
-    
-    const flareGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
-    flareGradient.addColorStop(0, 'rgba(255,255,200,0.6)');
-    flareGradient.addColorStop(0.5, 'rgba(255,200,100,0.3)');
-    flareGradient.addColorStop(1, 'transparent');
-    
-    ctx.fillStyle = flareGradient;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  
-  // Surface texture
-  for (let x = 0; x < w; x += 3) {
-    for (let y = 0; y < h; y += 3) {
-      const n = smoothNoise(x, y, 15);
-      ctx.fillStyle = `rgba(255,150,0,${n * 0.3})`;
-      ctx.fillRect(x, y, 3, 3);
-    }
-  }
-};
-
-// Moon - Gray with craters
-const drawMoon = (ctx, w, h) => {
-  // Base gray
-  ctx.fillStyle = '#888888';
-  ctx.fillRect(0, 0, w, h);
-  
-  // Add texture
+// Uranus - pale cyan-blue
+function drawUranus(ctx, w, h) {
   for (let x = 0; x < w; x += 2) {
     for (let y = 0; y < h; y += 2) {
-      const n = smoothNoise(x, y, 15);
-      ctx.fillStyle = `rgba(0,0,0,${n * 0.3})`;
+      const n = fbm(x, y, 3, 3.0, 0.5);
+      const r = Math.floor(lerp(190, 220, n));
+      const g = Math.floor(lerp(220, 240, n));
+      const b = Math.floor(lerp(225, 245, n));
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
       ctx.fillRect(x, y, 2, 2);
     }
   }
-  
-  // Craters
-  drawCraters(ctx, w, h, 50, 'rgba(60,60,60,0.6)', 'rgba(100,100,100,0.3)');
-  
-  // Dark maria
-  ctx.fillStyle = 'rgba(50,50,50,0.4)';
-  ctx.beginPath();
-  ctx.ellipse(w * 0.3, h * 0.4, 40, 30, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(w * 0.7, h * 0.5, 35, 25, 0.3, 0, Math.PI * 2);
-  ctx.fill();
-};
+  for (let i = 0; i < 15; i++) {
+    ctx.fillStyle = `rgba(255,255,255,${0.05 + Math.random() * 0.1})`;
+    ctx.beginPath();
+    ctx.ellipse(Math.random() * w, Math.random() * h, 20 + Math.random() * 50, 3 + Math.random() * 8, Math.random() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
 
-// Default - Gray
-const drawDefault = (ctx, w, h) => {
+// Neptune - deep blue with Great Dark Spot
+function drawNeptune(ctx, w, h) {
+  for (let x = 0; x < w; x += 2) {
+    for (let y = 0; y < h; y += 2) {
+      const n = fbm(x, y, 4, 3.0, 0.5);
+      const r = Math.floor(lerp(40, 80, n));
+      const g = Math.floor(lerp(50, 90, n));
+      const b = Math.floor(lerp(180, 230, n));
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(x, y, 2, 2);
+    }
+  }
+  // Cloud bands
+  ctx.fillStyle = 'rgba(100,120,230,0.25)';
+  ctx.fillRect(0, h * 0.28, w, h * 0.04);
+  ctx.fillRect(0, h * 0.52, w, h * 0.05);
+  ctx.fillRect(0, h * 0.74, w, h * 0.04);
+  // Great Dark Spot
+  const g = ctx.createRadialGradient(w * 0.4, h * 0.40, 0, w * 0.4, h * 0.40, 22);
+  g.addColorStop(0, 'rgba(20,30,140,0.7)');
+  g.addColorStop(0.5, 'rgba(30,40,160,0.3)');
+  g.addColorStop(1, 'transparent');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.ellipse(w * 0.4, h * 0.40, 22, 14, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// Sun - realistic solar surface with granulation
+function drawSun(ctx, w, h) {
+  // Multi-layer radial gradient
+  const g = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, w/2);
+  g.addColorStop(0, '#fffde0');
+  g.addColorStop(0.15, '#fff9c4');
+  g.addColorStop(0.3, '#ffcc00');
+  g.addColorStop(0.5, '#ff9900');
+  g.addColorStop(0.7, '#ff6600');
+  g.addColorStop(0.85, '#e65100');
+  g.addColorStop(1, '#bf360c');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  // Granulation (surface cells)
+  for (let x = 0; x < w; x += 3) {
+    for (let y = 0; y < h; y += 3) {
+      const n = fbm(x, y, 6, 2.5, 0.5);
+      const alpha = 0.05 + n * 0.25;
+      const r = Math.floor(255), gV = Math.floor(200 + n * 55), b = Math.floor(50 + n * 100);
+      ctx.fillStyle = `rgba(${r},${gV},${b},${alpha})`;
+      ctx.fillRect(x, y, 3, 3);
+    }
+  }
+  // Sunspots
+  for (let i = 0; i < 8; i++) {
+    const sx = w * (0.15 + Math.random() * 0.7);
+    const sy = h * (0.1 + Math.random() * 0.8);
+    const sr = 4 + Math.random() * 12;
+    const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
+    sg.addColorStop(0, 'rgba(40,20,0,0.8)');
+    sg.addColorStop(0.5, 'rgba(80,40,10,0.4)');
+    sg.addColorStop(1, 'transparent');
+    ctx.fillStyle = sg;
+    ctx.beginPath();
+    ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Bright faculae
+  for (let i = 0; i < 20; i++) {
+    const fx = Math.random() * w, fy = Math.random() * h;
+    const fr = 3 + Math.random() * 8;
+    const fg = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr);
+    fg.addColorStop(0, 'rgba(255,255,220,0.5)');
+    fg.addColorStop(1, 'transparent');
+    ctx.fillStyle = fg;
+    ctx.beginPath();
+    ctx.arc(fx, fy, fr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// Moon - realistic gray with craters and maria
+function drawMoon(ctx, w, h) {
+  for (let x = 0; x < w; x += 2) {
+    for (let y = 0; y < h; y += 2) {
+      const n = fbm(x, y, 5, 2.0, 0.5);
+      const v = Math.floor(lerp(140, 210, n));
+      ctx.fillStyle = `rgb(${v},${v},${v})`;
+      ctx.fillRect(x, y, 2, 2);
+    }
+  }
+  // Dark maria
+  [{ x: 0.3, y: 0.4, rx: 50, ry: 35 }, { x: 0.7, y: 0.5, rx: 40, ry: 30 }, { x: 0.5, y: 0.3, rx: 30, ry: 25 }].forEach(m => {
+    const g = ctx.createRadialGradient(w * m.x, h * m.y, 0, w * m.x, h * m.y, m.rx);
+    g.addColorStop(0, 'rgba(60,60,60,0.5)');
+    g.addColorStop(0.5, 'rgba(80,80,80,0.2)');
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(w * m.x, h * m.y, m.rx, m.ry, Math.random(), 0, Math.PI * 2);
+    ctx.fill();
+  });
+  drawCraters(ctx, w, h, 60, 'rgba(40,40,40,0.6)', 'rgba(180,180,180,0.3)');
+  drawCraters(ctx, w, h, 30, 'rgba(30,30,30,0.7)', 'rgba(160,160,160,0.2)');
+}
+
+function drawDefault(ctx, w, h) {
   ctx.fillStyle = '#888888';
   ctx.fillRect(0, 0, w, h);
+}
+
+export const generatePlanetTexture = (planetName) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  switch (planetName.toLowerCase()) {
+    case 'mercury': drawMercury(ctx, canvas.width, canvas.height); break;
+    case 'venus': drawVenus(ctx, canvas.width, canvas.height); break;
+    case 'earth': drawDefault(ctx, canvas.width, canvas.height); break; // Use real texture
+    case 'mars': drawMars(ctx, canvas.width, canvas.height); break;
+    case 'jupiter': drawJupiter(ctx, canvas.width, canvas.height); break;
+    case 'saturn': drawSaturn(ctx, canvas.width, canvas.height); break;
+    case 'uranus': drawUranus(ctx, canvas.width, canvas.height); break;
+    case 'neptune': drawNeptune(ctx, canvas.width, canvas.height); break;
+    case 'sun': drawSun(ctx, canvas.width, canvas.height); break;
+    case 'moon': drawDefault(ctx, canvas.width, canvas.height); break; // Use real texture
+    default: drawDefault(ctx, canvas.width, canvas.height);
+  }
+  return canvas;
 };

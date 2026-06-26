@@ -89,9 +89,8 @@ const Planet = ({ planet, speedMultiplier = 1 }) => {
         <sphereGeometry args={[planet.radius, 64, 64]} />
         <meshStandardMaterial
           map={texture}
-          color={planet.color}
-          roughness={0.7}
-          metalness={0.1}
+          roughness={planet.name === 'Earth' ? 0.8 : 0.7}
+          metalness={planet.name === 'Earth' ? 0.05 : 0.1}
         />
       </mesh>
 

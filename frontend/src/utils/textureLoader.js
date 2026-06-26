@@ -23,6 +23,8 @@ export const loadPlanetTexture = (planetName) => {
 
   const canvas = generatePlanetTexture(key);
   const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapU = THREE.RepeatWrapping;
   textureCache[key] = texture;
   return texture;
 };
@@ -31,6 +33,8 @@ export const loadSunTexture = () => {
   if (textureCache.sun) return textureCache.sun;
   const canvas = generatePlanetTexture('sun');
   const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapU = THREE.RepeatWrapping;
   textureCache.sun = texture;
   return texture;
 };
