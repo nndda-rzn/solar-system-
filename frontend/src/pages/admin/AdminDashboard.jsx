@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, BookOpen, HelpCircle, Award } from 'lucide-react';
+import { Users, HelpCircle, Award } from 'lucide-react';
 import GlassPanel from '../../components/ui/GlassPanel';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import api from '../../services/api';
@@ -12,15 +12,20 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const { data } = await api.get('/leaderboard');
-        setStats({
-          totalUsers: data?.length || 0,
-          totalQuizzes: 0,
-          totalCourses: 0
-        });
+        const [usersRes, questionsRes, leaderboardRes] = await Promise.all([
+        api.get('/users?limit=1').catch(() => ({ data: { total: 0 } })),
+        api.get('/questions').catch(() => ({ data: [] })),
+        api.get('/leaderboard').catch(() => ({ data: [] })),
+      ]);
+      setStats({
+        totalUsers: usersRes.data?.total || 0,
+        totalQuestions: Array.isArray(questionsRes.data) ? questionsRes.data.length : 0,
+        totalQuizzes: Array.isArray(leaderboardRes.data)
+          ? leaderboardRes.data.reduce((sum, e) => sum + (e.quizzesTaken || 0), 0) : 0
+      });
       } catch (error) {
         console.error('Error fetching stats:', error);
-        setStats({ totalUsers: 0, totalQuizzes: 0, totalCourses: 0 });
+        setStats({ totalUsers: 0, totalQuestions: 0, totalQuizzes: 0 });
       } finally {
         setLoading(false);
       }
@@ -32,9 +37,8 @@ const AdminDashboard = () => {
 
   const statCards = [
     { icon: Users, label: 'Total Users', value: stats?.totalUsers || 0, color: 'text-blue-400' },
-    { icon: HelpCircle, label: 'Total Quizzes', value: stats?.totalQuizzes || 0, color: 'text-green-400' },
-    { icon: BookOpen, label: 'Total Courses', value: stats?.totalCourses || 0, color: 'text-yellow-400' },
-    { icon: Award, label: 'Certificates', value: 0, color: 'text-purple-400' }
+    { icon: HelpCircle, label: 'Total Soal', value: stats?.totalQuestions || 0, color: 'text-green-400' },
+    { icon: Award, label: 'Total Kuis Diambil', value: stats?.totalQuizzes || 0, color: 'text-yellow-400' },
   ];
 
   return (
