@@ -49,9 +49,9 @@ const Navbar = () => {
 
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
-                <Link to="/profile" className="text-sm text-white/70 hover:text-white">
+                <span className="text-sm text-white/70">
                   {user?.name}
-                </Link>
+                </span>
                 {user?.role === 'ADMIN' && (
                   <Link to="/admin" className="text-sm text-yellow-400 hover:text-yellow-300">
                     Admin
