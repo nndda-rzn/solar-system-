@@ -1,0 +1,139 @@
+import { useState, Suspense } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { motion } from 'framer-motion';
+import GlassPanel from '../components/ui/GlassPanel';
+import Sun from '../components/three/Sun';
+import Planet from '../components/three/Planet';
+import OrbitPath from '../components/three/OrbitPath';
+import AsteroidBelt from '../components/three/AsteroidBelt';
+import Starfield from '../components/three/Starfield';
+import { PLANETS } from '../data/planets';
+
+const Explore = () => {
+  const [speed, setSpeed] = useState(10);
+  const [showOrbits, setShowOrbits] = useState(true);
+
+  const speeds = [
+    { label: '1x', value: 1 },
+    { label: '10x', value: 10 },
+    { label: '50x', value: 50 },
+    { label: '100x', value: 100 }
+  ];
+
+  return (
+    <div className="min-h-screen relative">
+      <div className="absolute inset-0">
+        <Canvas gl={{ logarithmicDepthBuffer: true }}>
+          <PerspectiveCamera 
+            makeDefault 
+            position={[0, 40, 90]}
+            near={0.1}
+            far={2000}
+          />
+          <OrbitControls
+            enableZoom={true}
+            enablePan={true}
+            minDistance={5}
+            maxDistance={400}
+            enableDamping
+            dampingFactor={0.05}
+          />
+          
+          {/* Lighting */}
+          <ambientLight intensity={0.5} />
+          <pointLight 
+            position={[0, 0, 0]} 
+            intensity={3} 
+            distance={800} 
+            decay={1} 
+            color="#FFD700" 
+          />
+          <directionalLight position={[50, 30, 50]} intensity={0.6} color="#ffffff" />
+          
+          <Suspense fallback={null}>
+            <Starfield count={4000} />
+            <Sun />
+            
+            {showOrbits && PLANETS.map((p) => (
+              <OrbitPath key={`orbit-${p.name}`} radius={p.distance} />
+            ))}
+            
+            {PLANETS.map((p) => (
+              <Planet key={p.name} planet={p} speedMultiplier={speed} />
+            ))}
+            
+            <AsteroidBelt count={800} innerRadius={34} outerRadius={42} />
+            
+            <EffectComposer>
+              <Bloom
+                intensity={0.4}
+                luminanceThreshold={0.3}
+                luminanceSmoothing={0.9}
+                mipmapBlur
+              />
+            </EffectComposer>
+          </Suspense>
+        </Canvas>
+      </div>
+
+      {/* Control Panel */}
+      <div className="absolute top-4 left-4 z-10">
+        <GlassPanel className="p-4">
+          <h3 className="font-heading text-lg mb-3">Kontrol</h3>
+          
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm text-white/70 block mb-1">Kecepatan</label>
+              <div className="flex gap-2">
+                {speeds.map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => setSpeed(s.value)}
+                    className={`px-3 py-1 rounded text-sm transition-colors ${
+                      speed === s.value
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showOrbits}
+                  onChange={(e) => setShowOrbits(e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm text-white/70">Tampilkan Orbit</span>
+              </label>
+            </div>
+          </div>
+        </GlassPanel>
+      </div>
+
+      {/* Planet List */}
+      <div className="absolute top-4 right-4 z-10">
+        <GlassPanel className="p-4">
+          <h3 className="font-heading text-lg mb-2">Daftar Planet</h3>
+          <div className="space-y-1">
+            {PLANETS.map((p) => (
+              <div key={p.name} className="flex items-center gap-2 text-sm">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: p.color }} />
+                <span className="text-white/70">{p.nameIndo}</span>
+              </div>
+            ))}
+          </div>
+        </GlassPanel>
+      </div>
+    </div>
+  );
+};
+
+export default Explore;

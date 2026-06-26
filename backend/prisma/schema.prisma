@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  password      String
+  name          String
+  role          String   @default("STUDENT")
+  avatar        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  scores        Score[]
+  certificates  Certificate[]
+  progress      UserProgress[]
+  analytics     Analytics[]
+  leaderboard   Leaderboard?
+}
+
+model Planet {
+  id              Int      @id @default(autoincrement())
+  name            String   @unique
+  nameIndo        String
+  radius          Float
+  distanceFromSun Float
+  orbitalPeriod   Float
+  rotationPeriod  Float
+  mass            Float
+  gravity         Float
+  temperature     Float
+  moons           Int
+  atmosphere      String
+  facts           String
+  texture         String
+  color           String
+  order           Int
+  questions       Question[]
+}
+
+model Question {
+  id            Int      @id @default(autoincrement())
+  question      String
+  options       String
+  correctIndex  Int
+  explanation   String
+  type          String   @default("MULTIPLE")
+  difficulty    String   @default("MEDIUM")
+  planetId      Int?
+  planet        Planet?  @relation(fields: [planetId], references: [id])
+  scores        Score[]
+}
+
+model Score {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id])
+  questionId      Int
+  question        Question @relation(fields: [questionId], references: [id])
+  quizType        String
+  score           Int
+  totalQuestions  Int
+  percentage      Float
+  timeTaken       Int
+  isCorrect       Boolean
+  createdAt       DateTime @default(now())
+}
+
+model Leaderboard {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique
+  user          User     @relation(fields: [userId], references: [id])
+  totalScore    Int      @default(0)
+  quizzesTaken  Int      @default(0)
+  avgPercentage Float    @default(0)
+  rank          Int?
+  updatedAt     DateTime @updatedAt
+}
+
+model Course {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  thumbnail   String?
+  order       Int
+  isPublished Boolean  @default(false)
+  modules     Module[]
+  certificates Certificate[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Module {
+  id           Int        @id @default(autoincrement())
+  courseId      Int
+  course        Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title        String
+  content      String
+  type         String     @default("TEXT")
+  order        Int
+  videoUrl     String?
+  duration     Int?
+  userProgress UserProgress[]
+}
+
+model UserProgress {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  moduleId    Int
+  module      Module   @relation(fields: [moduleId], references: [id])
+  completed   Boolean  @default(false)
+  completedAt DateTime?
+  @@unique([userId, moduleId])
+}
+
+model Certificate {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id])
+  courseId      Int
+  course        Course   @relation(fields: [courseId], references: [id])
+  issuedAt      DateTime @default(now())
+  certificateNo String   @unique
+}
+
+model Analytics {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  eventType String
+  eventData String
+  createdAt DateTime @default(now())
+}
