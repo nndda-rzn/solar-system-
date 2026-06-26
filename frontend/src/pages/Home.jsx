@@ -35,9 +35,9 @@ const Home = () => {
         <Canvas gl={{ logarithmicDepthBuffer: true }}>
           <PerspectiveCamera makeDefault position={[0, 30, 55]} near={0.1} far={2000} />
           <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.2} />
-          <ambientLight intensity={0.5} />
-          <pointLight position={[0, 0, 0]} intensity={3} distance={800} decay={1} color="#FFD700" />
-          <directionalLight position={[50, 30, 50]} intensity={0.6} color="#ffffff" />
+          <ambientLight intensity={0.2} />
+          <pointLight position={[0, 0, 0]} intensity={4} distance={900} decay={1.5} color="#FFFAF0" />
+          <directionalLight position={[50, 30, 50]} intensity={0.3} color="#ffffff" />
           <Suspense fallback={null}>
             <Starfield count={4000} />
             <Sun />
@@ -46,7 +46,7 @@ const Home = () => {
             ))}
             <AsteroidBelt count={600} innerRadius={28} outerRadius={42} />
             <EffectComposer>
-              <Bloom intensity={0.4} luminanceThreshold={0.3} luminanceSmoothing={0.9} mipmapBlur />
+              <Bloom intensity={0.6} luminanceThreshold={0.2} luminanceSmoothing={0.95} mipmapBlur />
             </EffectComposer>
           </Suspense>
         </Canvas>
