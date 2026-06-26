@@ -21,8 +21,9 @@ const Quiz = () => {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const { data } = await quizService.getQuestions();
-        const parsed = data.map(q => ({
+        const response = await quizService.getQuestions();
+        const raw = response.data ?? response;
+        const parsed = (Array.isArray(raw) ? raw : []).map(q => ({
           ...q,
           options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options
         }));

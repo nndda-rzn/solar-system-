@@ -10,9 +10,10 @@ const useAuthStore = create((set) => ({
   login: async (credentials) => {
     set({ isLoading: true });
     try {
-      const { data } = await authService.login(credentials);
-      localStorage.setItem('token', data.token);
-      set({ user: data.user, token: data.token, isAuthenticated: true, isLoading: false });
+      const response = await authService.login(credentials);
+      const payload = response.data ?? response;
+      localStorage.setItem('token', payload.token);
+      set({ user: payload.user, token: payload.token, isAuthenticated: true, isLoading: false });
       return { success: true };
     } catch (error) {
       set({ isLoading: false });
@@ -23,9 +24,10 @@ const useAuthStore = create((set) => ({
   register: async (userData) => {
     set({ isLoading: true });
     try {
-      const { data } = await authService.register(userData);
-      localStorage.setItem('token', data.token);
-      set({ user: data.user, token: data.token, isAuthenticated: true, isLoading: false });
+      const response = await authService.register(userData);
+      const payload = response.data ?? response;
+      localStorage.setItem('token', payload.token);
+      set({ user: payload.user, token: payload.token, isAuthenticated: true, isLoading: false });
       return { success: true };
     } catch (error) {
       set({ isLoading: false });
@@ -40,8 +42,9 @@ const useAuthStore = create((set) => ({
 
   checkAuth: async () => {
     try {
-      const { data } = await authService.getMe();
-      set({ user: data.user, isAuthenticated: true });
+      const response = await authService.getMe();
+      const payload = response.data ?? response;
+      set({ user: payload.user, isAuthenticated: true });
     } catch {
       localStorage.removeItem('token');
       set({ user: null, isAuthenticated: false });

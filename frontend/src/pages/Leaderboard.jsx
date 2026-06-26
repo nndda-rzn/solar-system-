@@ -11,8 +11,9 @@ const Leaderboard = () => {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const { data } = await leaderboardService.getTopUsers(10);
-        setLeaderboard(data);
+        const response = await leaderboardService.getTopUsers(10);
+        const entries = response.data ?? response;
+        setLeaderboard(Array.isArray(entries) ? entries : []);
       } catch (error) {
         console.error('Error fetching leaderboard:', error);
       } finally {

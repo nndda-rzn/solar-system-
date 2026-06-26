@@ -11,8 +11,9 @@ const usePlanetStore = create((set, get) => ({
     if (get().planets.length > 0) return;
     set({ isLoading: true });
     try {
-      const { data } = await planetService.getAll();
-      set({ planets: data, isLoading: false });
+      const response = await planetService.getAll();
+      const planets = response.data ?? response;
+      set({ planets, isLoading: false });
     } catch (error) {
       set({ error: error.message, isLoading: false });
     }
@@ -21,8 +22,9 @@ const usePlanetStore = create((set, get) => ({
   fetchPlanetByName: async (name) => {
     set({ isLoading: true });
     try {
-      const { data } = await planetService.getAll();
-      const found = data.find(p => p.name.toLowerCase() === name.toLowerCase());
+      const response = await planetService.getAll();
+      const planets = response.data ?? response;
+      const found = planets.find(p => p.name.toLowerCase() === name.toLowerCase());
       set({ selectedPlanet: found, isLoading: false });
       return found;
     } catch (error) {

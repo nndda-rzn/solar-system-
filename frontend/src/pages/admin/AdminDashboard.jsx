@@ -17,11 +17,14 @@ const AdminDashboard = () => {
         api.get('/questions').catch(() => ({ data: [] })),
         api.get('/leaderboard').catch(() => ({ data: [] })),
       ]);
+      const usersData = usersRes.data ?? usersRes;
+      const questionsData = questionsRes.data ?? questionsRes;
+      const leaderboardData = leaderboardRes.data ?? leaderboardRes;
       setStats({
-        totalUsers: usersRes.data?.total || 0,
-        totalQuestions: Array.isArray(questionsRes.data) ? questionsRes.data.length : 0,
-        totalQuizzes: Array.isArray(leaderboardRes.data)
-          ? leaderboardRes.data.reduce((sum, e) => sum + (e.quizzesTaken || 0), 0) : 0
+        totalUsers: usersData?.total || 0,
+        totalQuestions: Array.isArray(questionsData) ? questionsData.length : 0,
+        totalQuizzes: Array.isArray(leaderboardData)
+          ? leaderboardData.reduce((sum, e) => sum + (e.quizzesTaken || 0), 0) : 0
       });
       } catch (error) {
         console.error('Error fetching stats:', error);
