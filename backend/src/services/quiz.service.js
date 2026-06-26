@@ -36,12 +36,17 @@ class QuizService {
     });
 
     if (existingLeaderboard) {
+      const newTotalQuizzes = existingLeaderboard.quizzesTaken + 1;
+      const newAvgPercentage = (
+        (existingLeaderboard.avgPercentage * existingLeaderboard.quizzesTaken + percentage) /
+        newTotalQuizzes
+      );
       await prisma.leaderboard.update({
         where: { userId },
         data: {
           totalScore: { increment: score },
           quizzesTaken: { increment: 1 },
-          avgPercentage: (existingLeaderboard.avgPercentage + percentage) / 2
+          avgPercentage: Math.round(newAvgPercentage * 100) / 100
         }
       });
     } else {
