@@ -78,33 +78,36 @@ const Sun = () => {
         />
       </mesh>
 
-      <sprite ref={coronaRef} scale={[16, 16, 1]}>
+      <sprite ref={coronaRef} scale={[7, 7, 1]}>
         <spriteMaterial
           map={coronaTexture}
-          transparent
-          opacity={0.6}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </sprite>
-
-      <sprite ref={midGlowRef} scale={[13, 13, 1]}>
-        <spriteMaterial
-          map={midGlowTexture}
-          transparent
-          opacity={0.4}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </sprite>
-
-      <sprite ref={innerGlowRef} scale={[10, 10, 1]}>
-        <spriteMaterial
-          map={innerGlowTexture}
           transparent
           opacity={0.5}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
+          depthTest={false}
+        />
+      </sprite>
+
+      <sprite ref={midGlowRef} scale={[5.5, 5.5, 1]}>
+        <spriteMaterial
+          map={midGlowTexture}
+          transparent
+          opacity={0.35}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          depthTest={false}
+        />
+      </sprite>
+
+      <sprite ref={innerGlowRef} scale={[4.5, 4.5, 1]}>
+        <spriteMaterial
+          map={innerGlowTexture}
+          transparent
+          opacity={0.45}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          depthTest={false}
         />
       </sprite>
 
