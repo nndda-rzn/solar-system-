@@ -103,6 +103,7 @@ async function main() {
   }
   console.log('Planets seeded!');
 
+  await prisma.question.deleteMany({});
   for (const question of questions) {
     await prisma.question.create({ data: question });
   }
