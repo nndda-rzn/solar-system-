@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
 const routes = require('./routes');
+const errorHandler = require('./middleware/errorHandler');
 
 dotenv.config();
 
@@ -41,25 +42,13 @@ app.get('/api', (req, res) => {
       planets: '/api/planets',
       questions: '/api/questions',
       quiz: '/api/quiz',
-      leaderboard: '/api/leaderboard',
-      courses: '/api/courses',
-      modules: '/api/modules',
-      progress: '/api/progress',
-      certificates: '/api/certificates',
-      analytics: '/api/analytics'
+      leaderboard: '/api/leaderboard'
     }
   });
 });
 
 // Error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
-});
+app.use(errorHandler);
 
 // 404 handler
 app.use((req, res) => {
