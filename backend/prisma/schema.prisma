@@ -4,25 +4,85 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id        String                @id @default(cuid())
+  name      String
+  slug      String                @unique
+  plan      String                @default("FREE")
+  maxUsers  Int                   @default(50)
+  isActive  Boolean               @default(true)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  users     User[]
+  settings  OrganizationSettings?
+
+  @@index([slug])
+  @@index([isActive])
+  @@map("organizations")
+}
+
+model OrganizationSettings {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customLogo     String?
+  primaryColor   String       @default("#818CF8")
+  enableQuiz     Boolean      @default(true)
+  enableTimeline Boolean      @default(true)
+  enableCompare  Boolean      @default(true)
+  customDomain   String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@map("organization_settings")
 }
 
 model User {
-  id            Int      @id @default(autoincrement())
-  email         String   @unique
-  password      String
-  name          String
-  role          String   @default("STUDENT")
-  avatar        String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  password String
+  name     String
+  role     String  @default("STUDENT")
+  avatar   String?
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  studentId     String?
+  grade         String?
+  isActive      Boolean @default(true)
+  emailVerified Boolean @default(false)
+
+  lastLoginAt  DateTime?
+  lastLoginIp  String?
+  loginCount   Int       @default(0)
+  failedLogins Int       @default(0)
+  lockedUntil  DateTime?
+
+  createdBy String?
+  updatedBy String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
   scores        Score[]
   leaderboard   Leaderboard?
+  auditLogs     AuditLog[]
+  refreshTokens RefreshToken[]
+
+  @@index([email])
+  @@index([role])
+  @@index([organizationId])
+  @@index([isActive])
+  @@map("users")
 }
 
 model Planet {
-  id              Int      @id @default(autoincrement())
-  name            String   @unique
+  id              Int        @id @default(autoincrement())
+  name            String     @unique
   nameIndo        String
   radius          Float
   distanceFromSun Float
@@ -38,43 +98,96 @@ model Planet {
   color           String
   order           Int
   questions       Question[]
+
+  @@index([name])
+  @@index([order])
+  @@map("planets")
 }
 
 model Question {
-  id            Int      @id @default(autoincrement())
-  question      String
-  options       String
-  correctIndex  Int
-  explanation   String
-  type          String   @default("MULTIPLE")
-  difficulty    String   @default("MEDIUM")
-  planetId      Int?
-  planet        Planet?  @relation(fields: [planetId], references: [id])
-  scores        Score[]
+  id           Int     @id @default(autoincrement())
+  question     String
+  options      String
+  correctIndex Int
+  explanation  String
+  type         String  @default("MULTIPLE")
+  difficulty   String  @default("MEDIUM")
+  planetId     Int?
+  planet       Planet? @relation(fields: [planetId], references: [id], onDelete: SetNull)
+  scores       Score[]
+
+  @@index([planetId])
+  @@index([difficulty])
+  @@index([type])
+  @@map("questions")
 }
 
 model Score {
-  id              Int      @id @default(autoincrement())
-  userId          Int
-  user            User     @relation(fields: [userId], references: [id])
-  questionId      Int
-  question        Question @relation(fields: [questionId], references: [id])
-  quizType        String
-  score           Int
-  totalQuestions  Int
-  percentage      Float
-  timeTaken       Int
-  isCorrect       Boolean
-  createdAt       DateTime @default(now())
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId     Int
+  question       Question @relation(fields: [questionId], references: [id])
+  quizType       String
+  score          Int
+  totalQuestions Int
+  percentage     Float
+  timeTaken      Int
+  isCorrect      Boolean
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([questionId])
+  @@index([quizType])
+  @@index([createdAt])
+  @@map("scores")
 }
 
 model Leaderboard {
   id            Int      @id @default(autoincrement())
   userId        Int      @unique
-  user          User     @relation(fields: [userId], references: [id])
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   totalScore    Int      @default(0)
   quizzesTaken  Int      @default(0)
   avgPercentage Float    @default(0)
   rank          Int?
   updatedAt     DateTime @updatedAt
+
+  @@map("leaderboards")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action     String
+  entityType String
+  entityId   String?
+  oldValues  String?
+  newValues  String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+  revokedBy String?
+
+  @@index([token])
+  @@index([userId])
+  @@index([revokedAt])
+  @@map("refresh_tokens")
 }

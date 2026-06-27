@@ -4,6 +4,10 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: {
     'Content-Type': 'application/json'
+  },
+  timeout: 30000,
+  validateStatus: function (status) {
+    return status >= 200 && status < 500;
   }
 });
 
