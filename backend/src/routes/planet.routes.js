@@ -5,6 +5,10 @@ const { authenticate } = require('../middleware/auth');
 const { authorize } = require('../middleware/role');
 
 router.get('/', planetController.getAll);
+router.get('/search', planetController.search);
+router.get('/difficulty/:difficulty', planetController.getByDifficulty);
+router.get('/stats', planetController.getStats);
+router.get('/name/:name', planetController.getByName);
 router.get('/:id', planetController.getById);
 router.post('/', authenticate, authorize('ADMIN'), planetController.create);
 router.put('/:id', authenticate, authorize('ADMIN'), planetController.update);
