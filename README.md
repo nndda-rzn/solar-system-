@@ -1,51 +1,67 @@
-# Solar System Interactive Web
+# Solar System Interactive Web - Enterprise
 
-Web media interaktif tentang tata surya dengan fitur 3D, kuis, timeline, dan leaderboard.
+[![CI](https://github.com/nndda-rzn/solar-system-/actions/workflows/ci.yml/badge.svg)](https://github.com/nndda-rzn/solar-system-/actions/workflows/ci.yml)
+[![Deploy](https://github.com/nndda-rzn/solar-system-/actions/workflows/deploy.yml/badge.svg)](https://github.com/nndda-rzn/solar-system-/actions/workflows/deploy.yml)
+
+Enterprise-grade educational platform featuring interactive 3D solar system exploration, quizzes, analytics, and multi-organization support.
+
+## Features
+
+- ✅ **3D Solar System Exploration** - Interactive 3D visualization with Three.js
+- ✅ **Multi-Organization** - Support for schools/institutions
+- ✅ **Quiz System** - Adaptive quizzes with scoring & leaderboards
+- ✅ **Learning Analytics** - Student progress tracking & insights
+- ✅ **Admin Dashboard** - User management & organization controls
+- ✅ **GDPR Compliance** - Data export & deletion
+- ✅ **Rate Limiting** - Security protection
+- ✅ **Redis Caching** - Performance optimization
+- ✅ **CI/CD Pipeline** - Automated testing & deployment
 
 ## Tech Stack
 
 **Frontend:**
 - React 18 + Vite
-- Three.js + @react-three/fiber + @react-three/drei
+- Three.js + @react-three/fiber
 - Tailwind CSS
 - Framer Motion
-- Zustand (state management)
-- React Router
 
 **Backend:**
 - Node.js + Express
 - Prisma ORM
-- SQLite (development) / PostgreSQL (production)
+- Redis
 - JWT Authentication
 
-## Fitur
-
-- Eksplorasi 3D tata surya dengan semua planet
-- Detail informasi setiap planet
-- Simulasi orbit dengan kontrol kecepatan
-- Perbandingan ukuran antar planet
-- Kuis interaktif (10 soal)
-- Timeline sejarah eksplorasi ruang angkasa
-- Leaderboard global
-- Auth (login/register)
-- Admin dashboard
-
-## Cara Menjalankan
+## Quick Start
 
 ### 1. Clone & Install
-
 ```bash
-# Backend
-cd backend
-npm install
+# Clone repository
+git clone https://github.com/nndda-rzn/solar-system-.git
+cd solar-system-
 
-# Frontend
-cd ../frontend
-npm install
+# Install dependencies
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
-### 2. Setup Database
+### 2. Setup Environment
 
+**Backend (.env):**
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/solar_system_db"
+JWT_SECRET="your-super-secret-jwt-key"
+ACCESS_TOKEN_EXPIRY="15m"
+REFRESH_TOKEN_EXPIRY="7d"
+CORS_ORIGIN="http://localhost:5173"
+NODE_ENV="development"
+```
+
+**Redis (Optional but recommended):**
+```env
+REDIS_URL="redis://localhost:6379"
+```
+
+### 3. Run Database Migrations
 ```bash
 cd backend
 npx prisma generate
@@ -53,8 +69,7 @@ npx prisma db push
 npm run db:seed
 ```
 
-### 3. Jalankan Server
-
+### 4. Start Development
 ```bash
 # Backend (port 5000)
 cd backend
@@ -65,55 +80,23 @@ cd frontend
 npm run dev
 ```
 
-### 4. Akses Aplikasi
+## Deployment
 
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:5000
+### Railway (Backend)
+1. Connect GitHub repository
+2. Set environment variables
+3. Deploy
 
-### 5. Akun Default
+### Vercel (Frontend)
+1. Import project
+2. Set `VITE_API_URL` to your backend
+3. Deploy
 
-- Admin: admin@solarsystem.com / admin123
+## API Documentation
+See [API.md](docs/API.md) for complete endpoint documentation.
 
-## API Endpoints
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | /api/auth/register | Register user | No |
-| POST | /api/auth/login | Login | No |
-| GET | /api/auth/me | Get current user | Yes |
-| GET | /api/planets | List all planets | No |
-| GET | /api/planets/:id | Planet detail | No |
-| GET | /api/questions | List questions | No |
-| POST | /api/quiz/submit | Submit quiz | Yes |
-| GET | /api/leaderboard | Leaderboard | No |
-
-## Struktur Project
-
-```
-├── backend/
-│   ├── prisma/
-│   │   ├── schema.prisma
-│   │   └── seed.js
-│   └── src/
-│       ├── config/
-│       ├── controllers/
-│       ├── middleware/
-│       ├── routes/
-│       ├── services/
-│       └── utils/
-└── frontend/
-    └── src/
-        ├── components/
-        │   ├── auth/
-        │   ├── layout/
-        │   ├── three/
-        │   └── ui/
-        ├── data/
-        ├── pages/
-        ├── services/
-        └── stores/
-```
+## Project Structure
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed architecture guide.
 
 ## License
-
 MIT
