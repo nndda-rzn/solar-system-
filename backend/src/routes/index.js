@@ -10,6 +10,7 @@ const leaderboardRoutes = require('./leaderboard.routes');
 const organizationRoutes = require('./organization.routes');
 const auditLogRoutes = require('./auditLog.routes');
 const analyticsRoutes = require('./analytics.routes');
+const gdprRoutes = require('./gdpr.routes');
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
@@ -20,5 +21,6 @@ router.use('/leaderboard', leaderboardRoutes);
 router.use('/organizations', organizationRoutes);
 router.use('/audit-logs', auditLogRoutes);
 router.use('/analytics', analyticsRoutes);
+router.use('/gdpr', gdprRoutes);
 
 module.exports = router;
