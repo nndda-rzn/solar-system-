@@ -72,6 +72,7 @@ model User {
   leaderboard   Leaderboard?
   auditLogs     AuditLog[]
   refreshTokens RefreshToken[]
+  quizAttempts  QuizAttempt[]
 
   @@index([email])
   @@index([role])
@@ -105,16 +106,18 @@ model Planet {
 }
 
 model Question {
-  id           Int     @id @default(autoincrement())
-  question     String
-  options      String
-  correctIndex Int
-  explanation  String
-  type         String  @default("MULTIPLE")
-  difficulty   String  @default("MEDIUM")
-  planetId     Int?
-  planet       Planet? @relation(fields: [planetId], references: [id], onDelete: SetNull)
-  scores       Score[]
+  id                    Int                    @id @default(autoincrement())
+  question              String
+  options               String
+  correctIndex          Int
+  explanation           String
+  type                  String                 @default("MULTIPLE")
+  difficulty            String                 @default("MEDIUM")
+  planetId              Int?
+  planet                Planet?                @relation(fields: [planetId], references: [id], onDelete: SetNull)
+  scores                Score[]
+  quizTemplateQuestions QuizTemplateQuestion[]
+  quizAnswers           QuizAnswer[]
 
   @@index([planetId])
   @@index([difficulty])
@@ -141,6 +144,76 @@ model Score {
   @@index([quizType])
   @@index([createdAt])
   @@map("scores")
+}
+
+model QuizTemplate {
+  id           String                 @id @default(cuid())
+  name         String
+  description  String?
+  grade        String?
+  subject      String?
+  timeLimit    Int?
+  isShuffled   Boolean                @default(true)
+  isActive     Boolean                @default(true)
+  createdBy    Int
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  questions    QuizTemplateQuestion[]
+  quizAttempts QuizAttempt[]
+
+  @@index([grade])
+  @@index([subject])
+  @@index([isActive])
+  @@map("quiz_templates")
+}
+
+model QuizTemplateQuestion {
+  id         String       @id @default(cuid())
+  templateId String
+  template   QuizTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  questionId Int
+  question   Question     @relation(fields: [questionId], references: [id])
+  order      Int
+
+  @@unique([templateId, questionId])
+  @@map("quiz_template_questions")
+}
+
+model QuizAttempt {
+  id          String        @id @default(cuid())
+  userId      Int
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  templateId  String?
+  template    QuizTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  startedAt   DateTime      @default(now())
+  completedAt DateTime?
+  timeSpent   Int?
+  totalScore  Int?
+  maxScore    Int?
+  percentage  Float?
+  status      String        @default("IN_PROGRESS")
+  answers     QuizAnswer[]
+
+  @@index([userId])
+  @@index([templateId])
+  @@index([status])
+  @@index([startedAt])
+  @@map("quiz_attempts")
+}
+
+model QuizAnswer {
+  id            String      @id @default(cuid())
+  attemptId     String
+  attempt       QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId    Int
+  question      Question    @relation(fields: [questionId], references: [id])
+  selectedIndex Int
+  isCorrect     Boolean
+  timeTaken     Int?
+  createdAt     DateTime    @default(now())
+
+  @@index([attemptId])
+  @@map("quiz_answers")
 }
 
 model Leaderboard {
